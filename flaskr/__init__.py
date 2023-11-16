@@ -9,7 +9,7 @@ def create_app(test_config=None):
     app.register_blueprint(cve_bp)
     app.config.from_object('config')
     db.init_app(app)
-    # ensure the instance folder exists
+    
     try:
         os.makedirs(app.instance_path)
     except OSError:
