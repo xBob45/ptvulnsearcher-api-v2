@@ -1,7 +1,6 @@
 from flask import jsonify
 from flaskr.models.cve import db, Cve, Vendor
 
-
 def cve(cve_id):
     """Fetches database record based on provided CVE ID value."""
     record = (db.session.query(Cve.id, Cve.cwe, Cve.cvss, Cve.cvss_vector, Cve.summary, Vendor.vendor, Vendor.product_type, Vendor.product_name, Vendor.version).join(Vendor, Cve.cve_table_id == Vendor.cve_table_id).filter(Cve.id == cve_id.upper()).first_or_404())

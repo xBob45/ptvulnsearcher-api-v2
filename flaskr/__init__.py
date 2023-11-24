@@ -1,7 +1,7 @@
 import os
 from flask import Flask
 from flaskr.routes.route import cve_bp
-from flaskr.models import db
+from flaskr.models.cve import db
 
 def create_app(test_config=None):
     # create and configure the app
