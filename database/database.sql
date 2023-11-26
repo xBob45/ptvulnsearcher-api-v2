@@ -2,7 +2,7 @@ CREATE TABLE cve (
     cve_table_id BIGSERIAL PRIMARY KEY,
     id VARCHAR(15),
     cwe VARCHAR(15),
-    cvss FLOAT,
+    cvss VARCHAR(20),
     cvss_vector VARCHAR(40),
     summary TEXT
 );
@@ -13,6 +13,6 @@ CREATE TABLE vendor (
     vendor TEXT,
     product_type VARCHAR(11),
     product_name TEXT,
-    version FLOAT,
+    version VARCHAR(20),
     FOREIGN KEY (cve_table_id) REFERENCES cve(cve_table_id) ON DELETE CASCADE
 );

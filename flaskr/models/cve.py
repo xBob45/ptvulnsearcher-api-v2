@@ -9,7 +9,7 @@ class Cve(db.Model):
     cve_table_id = db.Column(db.Integer, primary_key=True)
     id = db.Column(db.String(15))
     cwe = db.Column(db.String(15))
-    cvss = db.Column(db.Float)
+    cvss = db.Column(db.String(20))
     cvss_vector = db.Column(db.String(40))
     summary = db.Column(db.Text)
     
@@ -23,6 +23,6 @@ class Vendor(db.Model):
     vendor = db.Column(db.Text)
     product_type = db.Column(db.String(11))
     product_name = db.Column(db.Text)
-    version = db.Column(db.Float)
+    version = db.Column(db.String(20))
 
     cve = db.relationship('Cve', back_populates='vendor')

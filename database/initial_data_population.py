@@ -3,14 +3,14 @@ import requests
 from requests.exceptions import ConnectionError, JSONDecodeError
 from time import sleep
 import csv
-from flaskr.models.cve import db
+import psycopg2
 
 
 
 # PostgreSQL connection should be done like this https://www.datacamp.com/tutorial/tutorial-postgresql-python
 class DataCollector():
     """Class responsible for database updates."""
-    CSV_PATH = 'flaskr/database/allitems.csv'
+    CSV_PATH = 'database/allitems.csv'
 
     def __init__(self):
         pass
@@ -80,42 +80,48 @@ class DataCollector():
         def JSONDataExtractor(response, key, default):
             """This function extract JSON data from REST API response."""
             try:
-               return response[key]
+                value = response[key]
+                return value if value != '*' else default
             except: 
                 return default
         
         def JSONDataExtractor_VP(response, default):
             """Overloaded function is adjusted to handle 'vulnerable product(VP) field'."""
             try:
-                return response['vulnerable_product'][0].split(':')
+                return [value if value != '*' else default for value in response['vulnerable_product'][0].split(':')]
             except:
-                return [default, default, default, default, default,default]
-
+                return [default, default, default, default, default, default]
+            
         for response in self.APIRequestResponse():
             data = {
                     'id': JSONDataExtractor(response, 'id', '-'), 
                     'cwe': JSONDataExtractor(response, 'cwe', '-'),  
-                    'cvss':JSONDataExtractor(response, 'cvss', 0.0), 
+                    'cvss':JSONDataExtractor(response, 'cvss', '-'), 
                     'cvss_vector':JSONDataExtractor(response, 'cvss-vector', '-'), 
                     'summary':JSONDataExtractor(response, 'summary', '-'), 
                     'vendor':JSONDataExtractor_VP(response, '-')[3], 
                     'product_type':JSONDataExtractor_VP(response, '-')[2].upper(), 
                     'product_name':JSONDataExtractor_VP(response, '-')[4], 
-                    'version':JSONDataExtractor_VP(response, 0.0)[5], 
+                    'version':JSONDataExtractor_VP(response, '-')[5], 
                     }
             yield data
     
     def InsertToDB(self):
+        connection = psycopg2.connect(database='ptvulnsearcher', user='postgres', host='localhost', password='postgres', port=5432)
+        cursor = connection.cursor()
         try:
             for record in self.ParseAPIResponse():
-                db.session.add(record)
-                db.session.commit()
+                print(record)
+                cursor.execute("INSERT INTO cve(id,cwe,cvss,cvss_vector,summary) VALUES(%s,%s,%s,%s,%s)", (record['id'], record['cwe'], record['cvss'],record['cvss_vector'], record['summary']))
+                cursor.execute("INSERT INTO vendor(vendor,product_type,product_name,version) VALUES(%s,%s,%s,%s)", (record['vendor'], record['product_type'], record['product_name'],record['version']))
+                connection.commit()
+                print("%s -> OK" % record['id'])
         except Exception as e:
             print("Error occured. \n %s" %e)
         finally:
-            db.session.close()
+            cursor.close
+            connection.close()
         
 
 a = DataCollector()
-#a.DownloadCSV()
 a.InsertToDB()
