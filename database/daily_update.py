@@ -4,11 +4,8 @@ from requests.exceptions import ConnectionError, JSONDecodeError
 from time import sleep
 import csv
 import psycopg2
+from database import connection, cursor
 
-connection = psycopg2.connect(database='ptvulnsearcher', user='postgres', host='localhost', password='postgres', port=5432)
-cursor = connection.cursor()
-
-# PostgreSQL connection should be done like this https://www.datacamp.com/tutorial/tutorial-postgresql-python
 class DataCollector():
     """Class responsible for database updates."""
     CSV_PATH = 'database/allitems.csv'
@@ -98,7 +95,7 @@ class DataCollector():
                 return default
         
         def JSONDataExtractor_VP(response, default):
-            """Overloaded function is adjusted to handle 'vulnerable product(VP) field'."""
+            """<JSONDataExtractor> adjusted to handle 'vulnerable product(VP) field'."""
             try:
                 return [value if value != '*' else default for value in response['vulnerable_product'][0].split(':')]
             except:

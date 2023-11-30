@@ -3,7 +3,6 @@ from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
-
 class Cve(db.Model):
     __tablename__ = 'cve'
     cve_table_id = db.Column(db.Integer, primary_key=True)
@@ -15,7 +14,6 @@ class Cve(db.Model):
     
     vendor = db.relationship('Vendor', back_populates='cve')
     
-
 class Vendor(db.Model):
     __tablename__ = 'vendor'
     vendor_table_id = db.Column(db.Integer, primary_key=True)
