@@ -5,7 +5,8 @@ from time import sleep
 import csv
 import psycopg2
 
-
+connection = psycopg2.connect(database='ptvulnsearcher', user='postgres', host='localhost', password='postgres', port=5432)
+cursor = connection.cursor()
 
 # PostgreSQL connection should be done like this https://www.datacamp.com/tutorial/tutorial-postgresql-python
 class DataCollector():
@@ -51,9 +52,20 @@ class DataCollector():
             except Exception as e:
                 print(e)
     
+    
+    def RecordAlreadyExists(self):
+        for cve in self.ReadCSV():
+            cursor.execute("SELECT EXISTS(SELECT 1 FROM cve WHERE id=%s)", (cve,))
+            present = cursor.fetchone()[0]
+            if present == True:
+                print("%s - Skpipped" % cve)
+                continue
+            yield cve
+
+    
     def APIRequestResponse(self):
         request_counter = 0
-        for cve_id in self.ReadCSV():
+        for cve_id in self.RecordAlreadyExists():
             if request_counter == 180:
                 sleep(60)
                 request_counter = 0
@@ -107,8 +119,6 @@ class DataCollector():
             yield data
     
     def InsertToDB(self):
-        connection = psycopg2.connect(database='ptvulnsearcher', user='postgres', host='localhost', password='postgres', port=5432)
-        cursor = connection.cursor()
         try:
             for record in self.ParseAPIResponse():
                 print(record)
