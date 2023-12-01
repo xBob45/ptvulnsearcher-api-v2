@@ -90,14 +90,14 @@ class DataCollector():
             """This function extract JSON data from REST API response."""
             try:
                 value = response[key]
-                return value if value != '*' else default
+                return value if value != None else default
             except: 
                 return default
         
         def JSONDataExtractor_VP(response, default):
             """<JSONDataExtractor> adjusted to handle 'vulnerable product(VP) field'."""
             try:
-                return [value if value != '*' else default for value in response['vulnerable_product'][0].split(':')]
+                return [value if value != None else default for value in response['vulnerable_product'][0].split(':')]
             except:
                 return [default, default, default, default, default, default]
             

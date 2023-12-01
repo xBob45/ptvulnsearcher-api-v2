@@ -14,11 +14,12 @@ class DataCollector():
         pass
 
     def DropRecordsOfCurrentYear(self):
-        """Function expunges all records of the current year as those records are probably going to be frequently updated."""
+        """Function expunges all records of the current year as those records are probably going to be frequently updated and reset DB sequence."""
         year = datetime.now().year
         cursor.execute("DELETE FROM cve WHERE id LIKE 'CVE-%s%%'",(year,))
         #print(cursor.rowcount)
         connection.commit()
+        #TODO - SEQUENCE RESET.
 
     def DownloadCSV(self):
         """Function tries to download csv file. Since the MITRE site is under maintenance from time to time after every uncessfull download attempt waits an hour before trying again."""
@@ -86,14 +87,14 @@ class DataCollector():
             """This function extract JSON data from REST API response."""
             try:
                 value = response[key]
-                return value if value != '*' else default
+                return value if value != None else default
             except: 
                 return default
         
         def JSONDataExtractor_VP(response, default):
             """<JSONDataExtractor> adjusted to handle 'vulnerable product(VP) field'."""
             try:
-                return [value if value != '*' else default for value in response['vulnerable_product'][0].split(':')]
+                return [value if value != None else default for value in response['vulnerable_product'][0].split(':')]
             except:
                 return [default, default, default, default, default, default]
             
