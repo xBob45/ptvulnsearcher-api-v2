@@ -3,7 +3,6 @@ import requests
 from requests.exceptions import ConnectionError, JSONDecodeError
 from time import sleep
 import csv
-import psycopg2
 from database import connection, cursor
 
 class DataCollector():
@@ -49,7 +48,6 @@ class DataCollector():
             except Exception as e:
                 print(e)
     
-    
     def RecordAlreadyExists(self):
         for cve in self.ReadCSV():
             cursor.execute("SELECT EXISTS(SELECT 1 FROM cve WHERE id=%s)", (cve,))
@@ -59,7 +57,6 @@ class DataCollector():
                 continue
             yield cve
 
-    
     def APIRequestResponse(self):
         request_counter = 0
         for cve_id in self.RecordAlreadyExists():
@@ -76,7 +73,7 @@ class DataCollector():
                         if api_response == None:
                             continue
                         yield api_response
-                    except (JSONDecodeError, Exception) as e: #From time to time JSONDecodeError Exception occures especially in latest records.
+                    except (JSONDecodeError, Exception) as e: #From time to time JSONDecodeError Exception occures especially in latest records due to a missing key.
                         continue
                 else:
                     raise ConnectionError
@@ -130,4 +127,5 @@ class DataCollector():
             connection.close()
         
 a = DataCollector()
+a.DownloadCSV()
 a.InsertToDB()

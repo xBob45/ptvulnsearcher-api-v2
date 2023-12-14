@@ -16,10 +16,29 @@ class DataCollector():
     def DropRecordsOfCurrentYear(self):
         """Function expunges all records of the current year as those records are probably going to be frequently updated and reset DB sequence."""
         year = datetime.now().year
-        cursor.execute("DELETE FROM cve WHERE id LIKE 'CVE-%s%%'",(year,))
-        #print(cursor.rowcount)
+
+        cursor.execute("DELETE FROM cve WHERE id LIKE 'CVE-{}%%'".format(year))
         connection.commit()
-        #TODO - SEQUENCE RESET.
+
+        #Resets the cve_cve_table_id_seq
+        cursor.execute('SELECT MAX(cve_table_id) FROM cve')
+        cve_last_id = cursor.fetchone()[0] or 1  #In case there are no records start with 1
+        print(cve_last_id)
+
+        #Resets the vendor_cve_table_id_seq
+        cursor.execute('SELECT MAX(vendor_table_id) FROM vendor')
+        vendor_last_id = cursor.fetchone()[0] or 1 
+        print(vendor_last_id)
+
+        #Resets vendor_vendor_table_id_seq
+        cursor.execute('SELECT MAX(cve_table_id) FROM vendor')
+        vendor_fk = cursor.fetchone()[0] or 1 
+
+        cursor.execute('ALTER SEQUENCE cve_cve_table_id_seq RESTART WITH %s' % (cve_last_id + 1))
+        cursor.execute('ALTER SEQUENCE vendor_vendor_table_id_seq RESTART WITH %s' % (vendor_last_id + 1))
+        cursor.execute('ALTER SEQUENCE vendor_cve_table_id_seq RESTART WITH %s' % (vendor_fk + 1))
+
+        connection.commit()
 
     def DownloadCSV(self):
         """Function tries to download csv file. Since the MITRE site is under maintenance from time to time after every uncessfull download attempt waits an hour before trying again."""
@@ -56,7 +75,16 @@ class DataCollector():
                     yield line[0] #CVE-####-####
             except Exception as e:
                 print(e)
-        
+
+    def RecordAlreadyExists(self):
+        for cve in self.ReadCSV():
+            cursor.execute("SELECT EXISTS(SELECT 1 FROM cve WHERE id=%s)", (cve,))
+            present = cursor.fetchone()[0]
+            if present == True:
+                print("%s - Skpipped" % cve)
+                continue
+            yield cve  
+
     def APIRequestResponse(self):
         request_counter = 0
         for cve_id in self.RecordAlreadyExists():
@@ -128,4 +156,5 @@ class DataCollector():
         
 a = DataCollector()
 a.DropRecordsOfCurrentYear()
-#a.InsertToDB()
+a.DownloadCSV()
+a.InsertToDB()
