@@ -1,10 +1,21 @@
 import os
+import sys
 import requests
 from requests.exceptions import ConnectionError, JSONDecodeError
 from time import sleep
 from datetime import datetime
 import csv
 from database import connection, cursor
+
+# Get the current script's directory
+current_dir = os.path.dirname(os.path.abspath(__file__))
+#print(current_dir)
+# Get the parent directory by going one level up
+parent_dir = os.path.dirname(current_dir)
+#print(parent_dir)
+# Add the parent directory to sys.path
+sys.path.append(parent_dir)
+
 
 class DataCollector():
     """Class responsible for database updates."""

@@ -1,9 +1,21 @@
 import os
+import sys
 import requests
 from requests.exceptions import ConnectionError, JSONDecodeError
 from time import sleep
 import csv
 from database import connection, cursor
+
+# Get the current script's directory
+current_dir = os.path.dirname(os.path.abspath(__file__))
+#print(current_dir)
+# Get the parent directory by going one level up
+parent_dir = os.path.dirname(current_dir)
+#print(parent_dir)
+# Add the parent directory to sys.path
+sys.path.append(parent_dir)
+
+from logging_setting import database_logger
 
 class DataCollector():
     """Class responsible for database updates."""
@@ -19,17 +31,17 @@ class DataCollector():
                 os.remove(self.CSV_PATH)
             try:
                 url = 'https://cve.mitre.org/data/downloads/allitems.csv'
-                print("Downloading . . .")
+                database_logger.info("Downloading . . .")
                 file = requests.get(url)
                 if file.status_code == 200:
                     with open (self.CSV_PATH, 'wb') as f:
                         f.write(file.content)
-                        print("Download complete.")
+                        database_logger.info("Download complete.")
                     break
                 else:
                     raise ConnectionError
             except (ConnectionError, Exception) as e:
-                print("Error occured while downloading the file. Retrying in 10 minutes. \n %s" % e)
+                database_logger.error("Error occured while downloading the file. Retrying in 10 minutes. \n %s" % e)
                 sleep(600)
 
     def ReadCSV(self):
@@ -46,14 +58,14 @@ class DataCollector():
                 for line in reader:
                     yield line[0] #CVE-####-####
             except Exception as e:
-                print(e)
+                database_logger.error(e)
     
     def RecordAlreadyExists(self):
         for cve in self.ReadCSV():
             cursor.execute("SELECT EXISTS(SELECT 1 FROM cve WHERE id=%s)", (cve,))
             present = cursor.fetchone()[0]
             if present == True:
-                print("%s - Skpipped" % cve)
+                database_logger.info("%s - Skpipped" % cve)
                 continue
             yield cve
 
@@ -78,7 +90,7 @@ class DataCollector():
                 else:
                     raise ConnectionError
             except (ConnectionError, Exception) as e:
-                print("Could not resolve the address. \n Record: %s \n Retrying in 30 minutes. \n %s" % (cve_id, e))
+                database_logger.info("Could not resolve the address. \n Record: %s \n Retrying in 30 minutes. \n %s" % (cve_id, e))
                 sleep(1800)
                 
     def ParseAPIResponse(self):
@@ -115,13 +127,12 @@ class DataCollector():
     def InsertToDB(self):
         try:
             for record in self.ParseAPIResponse():
-                print(record)
                 cursor.execute("INSERT INTO cve(id,cwe,cvss,cvss_vector,summary) VALUES(%s,%s,%s,%s,%s)", (record['id'], record['cwe'], record['cvss'],record['cvss_vector'], record['summary']))
                 cursor.execute("INSERT INTO vendor(vendor,product_type,product_name,version) VALUES(%s,%s,%s,%s)", (record['vendor'], record['product_type'], record['product_name'],record['version']))
                 connection.commit()
-                print("%s -> OK" % record['id'])
+                database_logger.info("%s -> INSERTED" % record['id'])
         except Exception as e:
-            print("Error occured. \n %s" %e)
+            database_logger.error("Error occured. \n %s" %e)
         finally:
             cursor.close
             connection.close()
