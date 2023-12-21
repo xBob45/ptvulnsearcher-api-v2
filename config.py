@@ -10,7 +10,6 @@ host = os.getenv("HOST")
 password = os.getenv("PASSWORD")
 port = os.getenv("PORT")
 
-
 SECRET_KEY = 'SECRET_KEY'
 SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://%s:%s@%s:%s/%s' % (user, password, host, port, database)
 print(SQLALCHEMY_DATABASE_URI)

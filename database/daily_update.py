@@ -138,5 +138,5 @@ class DataCollector():
             connection.close()
         
 a = DataCollector()
-a.DownloadCSV()
+#a.DownloadCSV()
 a.InsertToDB()
